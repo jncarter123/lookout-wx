@@ -1,0 +1,22 @@
+/.env
+/.env.backup
+/.env.production
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/.phpunit.cache
+.phpunit.result.cache
+/auth.json
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Local Claude Code settings
+/.claude/settings.local.json
