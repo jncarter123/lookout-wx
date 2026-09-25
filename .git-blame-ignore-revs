@@ -1,0 +1,6 @@
+# Commits that `git blame` should skip (formatting-only changes).
+# GitHub applies this automatically. Locally, run once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: apply Pint formatting and enforce it in CI
+53a6d2009838f820e3cf27e013b60f3c9ea19b8a
