@@ -30,7 +30,6 @@ class AlertsDashboard extends Component
 
     public ?NwsAlert $selectedAlert = null;
 
-
     public function updatedPeriodMinutes(): void
     {
         // Reset pagination when changing the time window

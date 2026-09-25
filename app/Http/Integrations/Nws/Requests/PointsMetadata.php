@@ -17,7 +17,7 @@ class PointsMetadata extends Request
     public function resolveEndpoint(): string
     {
         // /points/lat,lon
-        return '/points/' . $this->latitude . ',' . $this->longitude;
+        return '/points/'.$this->latitude.','.$this->longitude;
     }
 
     protected function defaultHeaders(): array

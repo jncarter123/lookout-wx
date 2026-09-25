@@ -17,6 +17,7 @@ use Saloon\Http\Response;
 class HttpValidatorCache
 {
     private const string CACHE_PREFIX = 'nws:httpcache:';
+
     private const int CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // keep validators around for a week
 
     /**
@@ -69,11 +70,11 @@ class HttpValidatorCache
         $query = array_filter($pendingRequest->query()->all(), static fn ($v) => $v !== null);
         ksort($query);
 
-        return $pendingRequest->getUrl() . ($query === [] ? '' : '?' . http_build_query($query));
+        return $pendingRequest->getUrl().($query === [] ? '' : '?'.http_build_query($query));
     }
 
     private function cacheKey(string $requestKey, string $field): string
     {
-        return self::CACHE_PREFIX . $field . ':' . sha1($requestKey);
+        return self::CACHE_PREFIX.$field.':'.sha1($requestKey);
     }
 }

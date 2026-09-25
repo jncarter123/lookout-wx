@@ -20,7 +20,6 @@ class ActiveAlertsDashboard extends Component
 
     public string $marineArea = '';
 
-
     public function updatedMarineArea(): void
     {
         $this->resetPage();
@@ -66,7 +65,7 @@ class ActiveAlertsDashboard extends Component
                     $query->whereHas('zones', function ($q) use ($zonePrefixes) {
                         $q->where(function ($q2) use ($zonePrefixes) {
                             foreach ($zonePrefixes as $prefix) {
-                                $q2->orWhere('zone_id', 'like', $prefix . '%');
+                                $q2->orWhere('zone_id', 'like', $prefix.'%');
                             }
                         });
                     });

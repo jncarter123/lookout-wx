@@ -14,13 +14,19 @@ class Index extends Component
     use WithPagination;
 
     public ?int $editingUserId = null;
+
     public bool $creating = false;
+
     public array $selectedRoles = [];
+
     public string $search = '';
 
     public string $name = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     public function updatingSearch(): void
@@ -52,15 +58,15 @@ class Index extends Component
     {
         $this->authorize('users.create');
         $this->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password'      => ['required', 'confirmed', Password::defaults()],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::defaults()],
             'selectedRoles' => ['array'],
         ]);
 
         $user = User::create([
-            'name'     => $this->name,
-            'email'    => $this->email,
+            'name' => $this->name,
+            'email' => $this->email,
             'password' => Hash::make($this->password),
         ]);
 
@@ -72,14 +78,14 @@ class Index extends Component
     {
         $this->authorize('users.update');
         $this->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'max:255', "unique:users,email,{$this->editingUserId}"],
-            'password'      => ['nullable', 'confirmed', Password::defaults()],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', "unique:users,email,{$this->editingUserId}"],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
             'selectedRoles' => ['array'],
         ]);
 
         $user = User::findOrFail($this->editingUserId);
-        $user->name  = $this->name;
+        $user->name = $this->name;
         $user->email = $this->email;
 
         if ($this->password !== '') {
@@ -104,7 +110,7 @@ class Index extends Component
         $users = User::query()
             ->when($this->search, fn ($q) => $q->where(function ($q) {
                 $q->where('name', 'like', "%{$this->search}%")
-                  ->orWhere('email', 'like', "%{$this->search}%");
+                    ->orWhere('email', 'like', "%{$this->search}%");
             }))
             ->with('roles')
             ->orderBy('name')

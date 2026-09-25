@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Integrations\Nws\Nws;
 use App\Services\NwsAlertsApiService;
 use App\Services\NwsAlertsService;
-use App\Http\Integrations\Nws\Nws;
 use Carbon\Carbon;
 
 function makeService(): NwsAlertsService
@@ -17,6 +17,7 @@ function callPrivate(object $obj, string $method, array $args = []): mixed
 {
     $ref = new ReflectionMethod($obj, $method);
     $ref->setAccessible(true);
+
     return $ref->invokeArgs($obj, $args);
 }
 
@@ -39,7 +40,7 @@ test('parseAtomEntries returns empty array for empty string', function () {
 });
 
 test('parseAtomEntries skips entries without id', function () {
-    $xml = <<<XML
+    $xml = <<<'XML'
     <?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom">
       <entry>
@@ -54,7 +55,7 @@ test('parseAtomEntries skips entries without id', function () {
 });
 
 test('parseAtomEntries extracts id and updatedAt from valid entries', function () {
-    $xml = <<<XML
+    $xml = <<<'XML'
     <?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom">
       <entry>
@@ -74,7 +75,7 @@ test('parseAtomEntries extracts id and updatedAt from valid entries', function (
 });
 
 test('parseAtomEntries sets updatedAt to null when updated element is missing', function () {
-    $xml = <<<XML
+    $xml = <<<'XML'
     <?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom">
       <entry>
@@ -91,7 +92,7 @@ test('parseAtomEntries sets updatedAt to null when updated element is missing', 
 });
 
 test('parseAtomEntries handles multiple entries', function () {
-    $xml = <<<XML
+    $xml = <<<'XML'
     <?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom">
       <entry>

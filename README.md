@@ -197,7 +197,7 @@ php artisan test
 
 ## Contributing
 
-Issues and pull requests are welcome. Please include tests for behaviour changes and make sure `./vendor/bin/pest` passes. To report a security vulnerability, see [SECURITY.md](SECURITY.md) instead of opening a public issue.
+Issues and pull requests are welcome. Please include tests for behaviour changes, and make sure `./vendor/bin/pest` passes and `./vendor/bin/pint` has been run (CI checks both). To report a security vulnerability, see [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ## License
 

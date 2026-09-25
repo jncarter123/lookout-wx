@@ -12,7 +12,8 @@ use Saloon\RateLimitPlugin\Traits\HasRateLimits;
 
 class ActiveAlertsAtomFeed extends Request
 {
-    Use HasRateLimits;
+    use HasRateLimits;
+
     protected Method $method = Method::GET;
 
     public function __construct(

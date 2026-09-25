@@ -2,7 +2,6 @@
 
 use App\Models\NwsAlert;
 use App\Models\NwsAlertCounty;
-use App\Services\NwsAlertsApiService;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function () {

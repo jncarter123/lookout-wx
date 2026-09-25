@@ -8,8 +8,11 @@ use Livewire\Component;
 class Index extends Component
 {
     public bool $showForm = false;
+
     public ?int $editingRoleId = null;
+
     public string $roleName = '';
+
     public array $selectedPermissions = [];
 
     public function newRole(): void

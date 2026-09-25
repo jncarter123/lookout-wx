@@ -44,7 +44,7 @@ class PermissionsAuditService
             ->where('name', $adminRoleName)
             ->first();
 
-        if (!$adminRole) {
+        if (! $adminRole) {
             $adminRole = Role::create([
                 'guard_name' => $guardName,
                 'name' => $adminRoleName,

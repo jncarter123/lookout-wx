@@ -13,12 +13,12 @@ use Illuminate\Queue\SerializesModels;
 
 class ProcessNwsAlertsBatch implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, ParsesCarbon;
+    use Dispatchable, InteractsWithQueue, ParsesCarbon, Queueable, SerializesModels;
 
     public int $tries = 1;
 
     /**
-     * @param array<int, array{url: string, updatedAt: string|null}> $alerts
+     * @param  array<int, array{url: string, updatedAt: string|null}>  $alerts
      */
     public function __construct(
         public readonly array $alerts,
@@ -42,5 +42,4 @@ class ProcessNwsAlertsBatch implements ShouldQueue
             );
         }
     }
-
 }

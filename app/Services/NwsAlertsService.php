@@ -22,7 +22,9 @@ use Saloon\RateLimitPlugin\Exceptions\RateLimitReachedException;
 class NwsAlertsService
 {
     use ParsesCarbon;
+
     private const int PROCESS_ALERTS_CHUNK_SIZE = 10;
+
     private const ?string FEED_DEFAULT_AREA = null;
 
     public function __construct(
@@ -78,7 +80,7 @@ class NwsAlertsService
                     continue;
                 }
 
-                /** @var \Carbon\Carbon|null $feedUpdatedAt */
+                /** @var Carbon|null $feedUpdatedAt */
                 $feedUpdatedAt = $entry['updatedAt'] ?? null;
 
                 $existing = $existingUpdated->get($id);
@@ -86,6 +88,7 @@ class NwsAlertsService
 
                 if (! $feedUpdatedAt) {
                     $changed[] = ['url' => $id, 'updatedAt' => null];
+
                     continue;
                 }
 
@@ -104,6 +107,7 @@ class NwsAlertsService
                 'exception' => $e,
                 'url' => $requestedUrl ?? 'unknown',
             ]);
+
             return;
         }
     }
@@ -202,7 +206,7 @@ class NwsAlertsService
      * expired early) so they stop appearing as active, and clear the mark on any that
      * have reappeared.
      *
-     * @param string[] $feedIds Alert IDs present in the current unfiltered feed.
+     * @param  string[]  $feedIds  Alert IDs present in the current unfiltered feed.
      */
     private function reconcileWithFeed(array $feedIds): void
     {
@@ -278,10 +282,9 @@ class NwsAlertsService
     /**
      * Insert or update an alert in the database using the given properties.
      *
-     * @param string $alertId The unique identifier of the alert.
-     * @param array $props The associative array of alert properties.
-     * @param Carbon $nwsUpdatedAt The timestamp of the alert's last update from the NWS.
-     * @param $json
+     * @param  string  $alertId  The unique identifier of the alert.
+     * @param  array  $props  The associative array of alert properties.
+     * @param  Carbon  $nwsUpdatedAt  The timestamp of the alert's last update from the NWS.
      * @return NwsAlert The upserted alert instance.
      */
     private function upsertAlert(string $alertId, array $props, Carbon $nwsUpdatedAt, $json): NwsAlert
@@ -318,10 +321,8 @@ class NwsAlertsService
      * This method iterates over the provided county UGCs and creates a new record
      * in the `NwsAlertCounty` model for each UGC, associating it with the specified alert ID.
      *
-     * @param string $alertId The unique identifier for the alert to be associated with the county UGCs.
-     * @param array $countyUgcs An array of county UGC strings to be inserted into the database.
-     *
-     * @return void
+     * @param  string  $alertId  The unique identifier for the alert to be associated with the county UGCs.
+     * @param  array  $countyUgcs  An array of county UGC strings to be inserted into the database.
      */
     private function insertCountyAlerts(string $alertId, array $countyUgcs): void
     {
@@ -352,8 +353,7 @@ class NwsAlertsService
      * the `id` and attempts to parse the `updated` timestamp into a Carbon instance. Entries with
      * missing or invalid `id` fields are excluded.
      *
-     * @param string $xmlString The Atom XML string to be parsed.
-     *
+     * @param  string  $xmlString  The Atom XML string to be parsed.
      * @return array An array of parsed entries, where each entry is an associative array containing:
      *               - 'id' (string): The unique identifier of the entry.
      *               - 'updatedAt' (\Carbon\Carbon|null): The parsed updated timestamp, or null if unavailable or invalid.
@@ -397,8 +397,7 @@ class NwsAlertsService
      * The method filters the UGC values to ensure they are strings and match the
      * expected pattern of two uppercase letters followed by "C" and three digits (e.g., "XXC123").
      *
-     * @param array $props An associative array of properties, expected to include the 'geocode.UGC' key.
-     *
+     * @param  array  $props  An associative array of properties, expected to include the 'geocode.UGC' key.
      * @return array A filtered and unique array of valid UGC strings.
      */
     private function extractCountyUgcs(array $props): array
@@ -409,5 +408,4 @@ class NwsAlertsService
             return is_string($v) && preg_match('/^[A-Z]{2}C\d{3}$/', $v);
         })));
     }
-
 }

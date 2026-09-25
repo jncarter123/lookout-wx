@@ -22,6 +22,7 @@ class Login extends Component
 
         if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             $this->addError('email', 'These credentials do not match our records.');
+
             return;
         }
 

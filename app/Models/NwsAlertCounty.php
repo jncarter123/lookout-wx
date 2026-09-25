@@ -12,7 +12,7 @@ class NwsAlertCounty extends Model
 {
     protected $fillable = [
         'alert_id',
-        'county_ugc'
+        'county_ugc',
     ];
 
     public function alert(): BelongsTo

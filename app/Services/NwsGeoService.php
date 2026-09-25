@@ -11,6 +11,7 @@ use Saloon\Exceptions\Request\RequestException;
 class NwsGeoService
 {
     private Nws $nws;
+
     public function __construct(Nws $nws)
     {
         $this->nws = $nws;
@@ -28,22 +29,21 @@ class NwsGeoService
      * If an error occurs during the cache lookup or API fetch process, it catches
      * the exception and returns an empty array, ensuring application stability.
      *
-     * @param float $latitude The latitude of the geographical point.
-     * @param float $longitude The longitude of the geographical point.
-     *
+     * @param  float  $latitude  The latitude of the geographical point.
+     * @param  float  $longitude  The longitude of the geographical point.
      * @return array The metadata of the geographical point or an empty array if an error occurs.
      */
     public function getPointsMetadata(float $latitude, float $longitude): array
     {
         try {
             // Normalize for cache key (avoid blowing cache with tiny float diffs)
-            $lat = number_format((float)$latitude, 5, '.', '');
-            $lon = number_format((float)$longitude, 5, '.', '');
+            $lat = number_format((float) $latitude, 5, '.', '');
+            $lon = number_format((float) $longitude, 5, '.', '');
 
             $cacheKey = "nws:county_ugc:{$lat},{$lon}";
 
             return Cache::remember($cacheKey, now()->addDays(30), function () use ($latitude, $longitude) {
-               return $this->doGetPointsMetadata($latitude, $longitude);
+                return $this->doGetPointsMetadata($latitude, $longitude);
             });
         } catch (\Throwable $e) {
             return [];
@@ -58,9 +58,8 @@ class NwsGeoService
      * including the exception, coordinates, request details, and response data
      * to facilitate debugging. The function throws a generic exception if the request fails.
      *
-     * @param float $latitude The latitude of the geographical point.
-     * @param float $longitude The longitude of the geographical point.
-     *
+     * @param  float  $latitude  The latitude of the geographical point.
+     * @param  float  $longitude  The longitude of the geographical point.
      * @return array The decoded JSON response containing the point metadata.
      *
      * @throws \Exception If the NWS Geo API request fails.
@@ -126,5 +125,4 @@ class NwsGeoService
 
         return (string) end($segments);
     }
-
 }

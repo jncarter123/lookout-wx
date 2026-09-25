@@ -20,7 +20,7 @@ class AdminUserSeeder extends Seeder
 
         foreach (config('auth_permissions.permissions', []) as $permissionName) {
             Permission::firstOrCreate([
-                'name'       => $permissionName,
+                'name' => $permissionName,
                 'guard_name' => $guard,
             ]);
         }
@@ -35,8 +35,8 @@ class AdminUserSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
-                'name'              => 'Admin',
-                'password'          => Hash::make($password),
+                'name' => 'Admin',
+                'password' => Hash::make($password),
                 'email_verified_at' => now(),
             ]
         );

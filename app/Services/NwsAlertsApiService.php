@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Cache;
 class NwsAlertsApiService
 {
     private const CACHE_PREFIX = 'api:alerts:county:';
+
     private const POINT_CACHE_PREFIX = 'api:alerts:point:';
+
     private const CACHE_TTL_SECONDS = 15;
 
     public function getAlertsByCounty(string $ugc): array
@@ -48,7 +50,7 @@ class NwsAlertsApiService
         }
 
         // Not invalidated on ingest like county keys; the short TTL bounds staleness.
-        $cacheKey = self::POINT_CACHE_PREFIX . ($countyUgc ?? '-') . ':' . ($zoneId ?? '-');
+        $cacheKey = self::POINT_CACHE_PREFIX.($countyUgc ?? '-').':'.($zoneId ?? '-');
 
         return Cache::store('redis')->remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($countyUgc, $zoneId) {
             $alerts = $this->activeAlerts(function (Builder $q) use ($countyUgc, $zoneId) {
@@ -92,14 +94,14 @@ class NwsAlertsApiService
             ->orderByDesc('sent')
             ->limit(200)
             ->get([
-                'id','event','headline','severity','certainty','urgency','status','message_type',
-                'sent','effective','onset','expires','ends','nws_updated_at'
+                'id', 'event', 'headline', 'severity', 'certainty', 'urgency', 'status', 'message_type',
+                'sent', 'effective', 'onset', 'expires', 'ends', 'nws_updated_at',
             ]);
     }
 
     public function invalidateCounty(string $ugc): void
     {
-        if (!preg_match('/^[A-Z]{2}C\d{3}$/', $ugc)) {
+        if (! preg_match('/^[A-Z]{2}C\d{3}$/', $ugc)) {
             return;
         }
 
@@ -117,13 +119,13 @@ class NwsAlertsApiService
 
     private function assertValidCountyUgc(string $ugc): void
     {
-        if (!preg_match('/^[A-Z]{2}C\d{3}$/', $ugc)) {
+        if (! preg_match('/^[A-Z]{2}C\d{3}$/', $ugc)) {
             throw new \InvalidArgumentException('Invalid county UGC. Example: TXC121');
         }
     }
 
     private function countyCacheKey(string $ugc): string
     {
-        return self::CACHE_PREFIX . $ugc;
+        return self::CACHE_PREFIX.$ugc;
     }
 }

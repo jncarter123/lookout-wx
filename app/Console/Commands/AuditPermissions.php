@@ -28,7 +28,7 @@ class AuditPermissions extends Command
                 )
             );
         } catch (\Throwable $throwable) {
-            $this->error('Failed: ' . $throwable->getMessage());
+            $this->error('Failed: '.$throwable->getMessage());
         }
 
         $this->info('Permissions audit complete.');

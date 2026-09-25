@@ -47,5 +47,5 @@ test('getAlertsByCounty throws for invalid UGC', function () {
     $service = app(NwsAlertsApiService::class);
 
     expect(fn () => $service->getAlertsByCounty('invalid'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
