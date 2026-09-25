@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Trusted Proxies
+    |--------------------------------------------------------------------------
+    |
+    | Addresses whose X-Forwarded-* headers are believed: "*" for any, or a
+    | comma-separated list of IPs/CIDRs. Unset trusts none. Only trust "*"
+    | when the app is reachable solely through the proxy.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

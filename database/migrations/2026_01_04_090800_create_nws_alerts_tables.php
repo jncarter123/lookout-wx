@@ -48,14 +48,9 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        Schema::create('nws_http_cache', function (Blueprint $table) {
-            $table->id();
-            $table->string('url', 1024)->unique();
-            $table->string('etag', 255)->nullable();
-            $table->string('last_modified', 255)->nullable();
-            $table->timestamp('checked_at')->nullable();
-            $table->timestamps();
-        });
+        // nws_http_cache used to be created here. It was never used and is dropped by
+        // 2026_09_25_000001; its unique index on a 1024-char utf8mb4 column also
+        // exceeded MySQL 8's 3072-byte key limit and broke fresh installs.
     }
 
     public function down(): void

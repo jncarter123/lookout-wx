@@ -1,0 +1,122 @@
+name: lookout
+
+# Three app services from one image, plus MySQL and Redis. All three app
+# services are required: `scheduler` queues the NWS poll every minute and
+# `horizon` runs it, so without either no alerts arrive.
+
+x-app: &app
+  build:
+    context: .
+  # What `docker compose build` writes locally. On a server, point this at the
+  # published image instead — LOOKOUT_IMAGE=jncarter/lookout-wx:<tag> in a
+  # .env beside this file — and pull rather than build.
+  image: ${LOOKOUT_IMAGE:-lookout-wx:latest}
+  env_file:
+    - docker.env
+  environment:
+    APP_NAME: Lookout
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_CHANNEL: stderr
+    LOG_LEVEL: info
+    # The bundled MySQL and Redis below. Values in this block override
+    # docker.env; to use an external database or Redis, change them here.
+    DB_CONNECTION: mysql
+    DB_HOST: mysql
+    DB_PORT: "3306"
+    DB_DATABASE: lookout
+    DB_USERNAME: lookout
+    DB_PASSWORD: ${DB_PASSWORD:-lookout}
+    REDIS_CLIENT: phpredis
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: redis
+    NWS_API_BASEURL: https://api.weather.gov
+    # Believe X-Forwarded-* from anyone. Safe only because the port below is
+    # published on 127.0.0.1, so the reverse proxy is the only client that can
+    # reach the app. Narrow this if you publish the port more widely.
+    TRUSTED_PROXIES: "*"
+  volumes:
+    - lookout-data:/var/lib/lookout
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *app
+    ports:
+      - "127.0.0.1:8000:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  horizon:
+    <<: *app
+    command: ["horizon"]
+    # The image healthcheck curls /up; this role serves nothing.
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    # Horizon waits for running jobs to finish before exiting; give the
+    # longest (processing, 120s timeout) room to do so.
+    stop_grace_period: 2m
+    depends_on:
+      app:
+        # Waits out the migrations and the APP_KEY, both of which the web
+        # container owns.
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    command: ["scheduler"]
+    # The brackets stop pgrep from matching the healthcheck's own command line.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f '[s]chedule:work' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      app:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: lookout
+      MYSQL_USER: lookout
+      MYSQL_PASSWORD: ${DB_PASSWORD:-lookout}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u lookout -p\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Queued jobs and HTTP cache validators; snapshot so a restart keeps them.
+    command: ["redis-server", "--save", "60", "1"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  lookout-data:
+  mysql-data:
+  redis-data:
