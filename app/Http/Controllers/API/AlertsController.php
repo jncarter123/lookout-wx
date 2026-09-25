@@ -13,8 +13,7 @@ class AlertsController extends Controller
     public function __construct(
         private readonly NwsAlertsApiService $alertService,
         private readonly NwsGeoService $geoService
-    )
-    {}
+    ) {}
 
     public function byCounty(string $ugc): JsonResponse
     {
@@ -35,8 +34,7 @@ class AlertsController extends Controller
      * fetches alerts for either. Offshore points have no county, so marine alerts match on the zone (e.g. GMZ557).
      * In case of an error during processing, an error response is returned.
      *
-     * @param Request $request The HTTP request instance containing latitude and longitude.
-     *
+     * @param  Request  $request  The HTTP request instance containing latitude and longitude.
      * @return JsonResponse A response containing either the fetched weather alerts or an error message if processing fails.
      *
      * @throws \Exception If there is an issue processing the request.

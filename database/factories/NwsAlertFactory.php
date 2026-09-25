@@ -14,7 +14,7 @@ class NwsAlertFactory extends Factory
         $sent = now()->subHours(rand(1, 12));
 
         return [
-            'id' => 'https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.' . $this->faker->unique()->uuid(),
+            'id' => 'https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.'.$this->faker->unique()->uuid(),
             'event' => $this->faker->randomElement(['Special Marine Warning', 'Small Craft Advisory', 'Gale Warning']),
             'headline' => $this->faker->sentence(),
             'severity' => $this->faker->randomElement(['Minor', 'Moderate', 'Severe', 'Extreme']),

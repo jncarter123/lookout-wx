@@ -10,8 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class NwsAlert extends Model
 {
     use HasFactory;
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [

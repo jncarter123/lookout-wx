@@ -23,7 +23,7 @@ class ActiveAlertsByPoint extends Request
     protected function defaultQuery(): array
     {
         return [
-            'point' => $this->latitude . ',' . $this->longitude,
+            'point' => $this->latitude.','.$this->longitude,
         ];
     }
 

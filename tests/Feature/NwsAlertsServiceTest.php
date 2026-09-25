@@ -30,7 +30,7 @@ function atomFeed(array $ids): string
         $ids
     ));
 
-    return '<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">' . $entries . '</feed>';
+    return '<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">'.$entries.'</feed>';
 }
 
 function alertJson(string $id, array $props = []): array
@@ -44,7 +44,7 @@ function alertJson(string $id, array $props = []): array
             'updated' => '2026-09-24T12:00:00+00:00',
             'expires' => now()->addHours(6)->toIso8601String(),
             'geocode' => ['UGC' => ['TXC121']],
-            'affectedZones' => [NWS_BASE . '/zones/forecast/GMZ330'],
+            'affectedZones' => [NWS_BASE.'/zones/forecast/GMZ330'],
         ], $props),
     ];
 }
@@ -118,7 +118,7 @@ test('inActiveFeed excludes removed alerts and cancellation notices', function (
 // ─── Bug 2: validators stored only after successful processing ───────────────
 
 test('failed processing is rolled back and the ETag is not reused', function () {
-    $id = NWS_BASE . '/alerts/urn:oid:fail';
+    $id = NWS_BASE.'/alerts/urn:oid:fail';
     $mockClient = new MockClient([
         MockResponse::make(alertJson($id), 200, ['ETag' => '"v1"']),
         MockResponse::make(alertJson($id), 200, ['ETag' => '"v1"']),
@@ -147,7 +147,7 @@ test('failed processing is rolled back and the ETag is not reused', function () 
 });
 
 test('ETag is sent on the next request after successful processing', function () {
-    $id = NWS_BASE . '/alerts/urn:oid:ok';
+    $id = NWS_BASE.'/alerts/urn:oid:ok';
     $mockClient = new MockClient([
         MockResponse::make(alertJson($id), 200, ['ETag' => '"v1"']),
         MockResponse::make('', 304),
@@ -185,7 +185,7 @@ test('feed ETag includes the area query in its cache key', function () {
 // ─── Bug 3: missing/invalid "updated" timestamp ──────────────────────────────
 
 test('processAlertUrl falls back to the feed timestamp when updated is missing', function () {
-    $id = NWS_BASE . '/alerts/urn:oid:no-updated';
+    $id = NWS_BASE.'/alerts/urn:oid:no-updated';
     $feedUpdatedAt = Carbon::parse('2026-09-24T11:00:00Z');
 
     makeFeedService(new MockClient([
@@ -196,7 +196,7 @@ test('processAlertUrl falls back to the feed timestamp when updated is missing',
 });
 
 test('processAlertUrl falls back to the feed timestamp when updated is unparseable', function () {
-    $id = NWS_BASE . '/alerts/urn:oid:bad-updated';
+    $id = NWS_BASE.'/alerts/urn:oid:bad-updated';
     $feedUpdatedAt = Carbon::parse('2026-09-24T11:00:00Z');
 
     makeFeedService(new MockClient([

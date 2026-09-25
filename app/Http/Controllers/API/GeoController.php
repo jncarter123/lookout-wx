@@ -33,8 +33,8 @@ class GeoController extends Controller
      * cached by the service for 30 days.
      *
      * @param  Request  $request  Query parameters: lat (float), lon (float)
-     * @return JsonResponse       200 with the full NWS properties payload,
-     *                            or 404 if the service returned no data.
+     * @return JsonResponse 200 with the full NWS properties payload,
+     *                      or 404 if the service returned no data.
      */
     public function resolveMetadataFromPoint(Request $request): JsonResponse
     {
@@ -62,8 +62,8 @@ class GeoController extends Controller
      * Example UGC: `TXC121` (derived from `/zones/county/TXC121`).
      *
      * @param  Request  $request  Query parameters: lat (float), lon (float)
-     * @return JsonResponse       200 with `{ "ugc": "TXC121" }`,
-     *                            or 404 with `{ "ugc": null }` if unresolvable.
+     * @return JsonResponse 200 with `{ "ugc": "TXC121" }`,
+     *                      or 404 with `{ "ugc": null }` if unresolvable.
      */
     public function resolveUgcFromPoint(Request $request): JsonResponse
     {
@@ -73,8 +73,8 @@ class GeoController extends Controller
         ]);
 
         // Normalize for cache key (avoid blowing cache with tiny float diffs)
-        $lat = number_format((float)$data['lat'], 5, '.', '');
-        $lon = number_format((float)$data['lon'], 5, '.', '');
+        $lat = number_format((float) $data['lat'], 5, '.', '');
+        $lon = number_format((float) $data['lon'], 5, '.', '');
 
         $ugc = $this->geoService->getCountyUgc($lat, $lon);
 

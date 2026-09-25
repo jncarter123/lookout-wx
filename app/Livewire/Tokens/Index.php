@@ -13,11 +13,15 @@ class Index extends Component
     public ?int $selectedUserId = null;
 
     public bool $showCreateModal = false;
+
     public string $tokenName = '';
+
     public ?string $expiresAt = null;
+
     public string $expiryPreset = 'never';
 
     public ?string $newTokenValue = null;
+
     public bool $showNewToken = false;
 
     public function mount(): void
@@ -51,10 +55,10 @@ class Index extends Component
         $this->expiryPreset = $preset;
 
         $this->expiresAt = match ($preset) {
-            '1month'  => Carbon::now()->addMonth()->format('Y-m-d'),
+            '1month' => Carbon::now()->addMonth()->format('Y-m-d'),
             '3months' => Carbon::now()->addMonths(3)->format('Y-m-d'),
-            'never'   => null,
-            default   => $this->expiresAt,
+            'never' => null,
+            default => $this->expiresAt,
         };
     }
 
