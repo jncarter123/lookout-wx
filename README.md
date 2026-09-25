@@ -45,6 +45,29 @@ Real-time National Weather Service alert monitoring, built with Laravel. Lookout
 - Redis
 - Pusher account
 
+## Running with Docker
+
+One image runs as three containers from [`compose.yaml`](compose.yaml), alongside MySQL and Redis: the web app, the Horizon queue workers, and the scheduler that queues the NWS poll every minute.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/jncarter123/lookout-wx/main/compose.yaml
+curl -fsSL -o docker.env https://raw.githubusercontent.com/jncarter123/lookout-wx/main/docker.env.example
+echo "LOOKOUT_IMAGE=jncarter/lookout-wx:1" > .env    # pull instead of build
+echo "DB_PASSWORD=$(openssl rand -hex 16)" >> .env    # MySQL password, used by both services
+
+# edit docker.env: set APP_URL and NWS_API_USER_AGENT (and Pusher for live updates)
+docker compose up -d
+docker compose exec app php artisan db:seed --force   # admin@example.com; the password is printed once
+```
+
+The app listens on `127.0.0.1:8000`, plain HTTP on loopback only, for a reverse proxy in front to terminate TLS. Set `APP_URL` in `docker.env` to the public URL, scheme included (`https://lookout.example.com`), or the browser blocks its assets as mixed content.
+
+- **Live updates** need a Pusher Channels app; set `BROADCAST_CONNECTION=pusher` and the `PUSHER_*` keys in `docker.env`. Without them Lookout still ingests alerts, and dashboards show them on the next page load.
+- **Data** lives in the `mysql-data` volume. The `APP_KEY` is generated onto the `lookout-data` volume on first start; it only protects sessions, so losing it just signs everyone out.
+- **Upgrades:** `docker compose pull && docker compose up -d`. Migrations run when the web container starts.
+
+Images are published to Docker Hub as [`jncarter/lookout-wx`](https://hub.docker.com/r/jncarter/lookout-wx) for `linux/amd64` and `linux/arm64`, tagged by version (`1.0.0`, `1.0`, `1`), `latest`, and commit SHA. To build from source instead, clone the repository, `cp docker.env.example docker.env`, and run `docker compose up -d --build`.
+
 ## Installation
 
 ```bash
