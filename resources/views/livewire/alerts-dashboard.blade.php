@@ -19,17 +19,31 @@
                 </p>
             </div>
 
-            <div class="w-full sm:w-64">
-                <label class="block text-sm font-medium text-gray-200">Time window</label>
-                <select
-                        class="mt-1 block w-full rounded-md border border-gray-800 bg-gray-900 text-gray-100 shadow-sm
-                               focus:border-gray-600 focus:ring-gray-600"
-                        wire:model.live="periodMinutes"
-                >
-                    @foreach($periodOptions as $minutes => $label)
-                        <option value="{{ $minutes }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+            <div class="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+                <div class="w-full sm:w-72">
+                    <label for="alert-search" class="block text-sm font-medium text-gray-200">Search</label>
+                    <input
+                            id="alert-search"
+                            type="search"
+                            wire:model.live.debounce.300ms="search"
+                            placeholder="Event, headline, area, UGC or zone…"
+                            class="mt-1 block w-full rounded-md border border-gray-800 bg-gray-900 text-gray-100 shadow-sm
+                                   placeholder:text-gray-500 focus:border-gray-600 focus:ring-gray-600"
+                    >
+                </div>
+
+                <div class="w-full sm:w-64">
+                    <label class="block text-sm font-medium text-gray-200">Time window</label>
+                    <select
+                            class="mt-1 block w-full rounded-md border border-gray-800 bg-gray-900 text-gray-100 shadow-sm
+                                   focus:border-gray-600 focus:ring-gray-600"
+                            wire:model.live="periodMinutes"
+                    >
+                        @foreach($periodOptions as $minutes => $label)
+                            <option value="{{ $minutes }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -94,7 +108,11 @@
                     @empty
                         <tr>
                             <td class="px-4 py-6 text-center text-gray-300" colspan="5">
-                                No alerts found for this time window.
+                                @if(trim($search) !== '')
+                                    No alerts match “{{ $search }}” in this time window.
+                                @else
+                                    No alerts found for this time window.
+                                @endif
                             </td>
                         </tr>
                     @endforelse
