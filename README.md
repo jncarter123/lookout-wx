@@ -1,6 +1,6 @@
 # Lookout
 
-Real-time National Weather Service alert monitoring, built with Laravel. Lookout continuously polls the [NWS API](https://api.weather.gov) for all active alerts, stores them, and delivers them to the UI in real time via Pusher and to other systems via a token-authenticated API. It covers land and marine alerts alike, with extra support for mariners: marine-area filters and point lookups that work offshore.
+Real-time National Weather Service alert monitoring, built with Laravel. Lookout continuously polls the [NWS API](https://api.weather.gov) for all active alerts, stores them, and delivers them to the UI in real time via Reverb or Pusher and to other systems via a token-authenticated API. It covers land and marine alerts alike, with extra support for mariners: marine-area filters and point lookups that work offshore.
 
 > [!WARNING]
 > **Not an official warning source.** This project is not affiliated with or endorsed by the National Weather Service or NOAA. Alerts may be delayed, incomplete, or missing because of polling intervals, upstream outages, or bugs. Do not rely on it for safety-of-life decisions; always consult official NWS/NOAA broadcasts, NOAA Weather Radio, and VHF marine channels.
@@ -9,7 +9,7 @@ Real-time National Weather Service alert monitoring, built with Laravel. Lookout
 
 - **Active Alerts Dashboard** — View current NWS alerts filtered by marine area (Alaska, Atlantic, Great Lakes, Gulf of Mexico, Eastern Pacific, Central/Western Pacific) or specific forecast zone (e.g. `GMZ330`)
 - **Historical Alerts Dashboard** — Browse past alerts with configurable time-window filters (15 min – 12 hrs)
-- **Real-Time Updates** — New and updated alerts are broadcast instantly via Pusher without page reloads
+- **Real-Time Updates** — New and updated alerts are broadcast instantly via an external Reverb server or Pusher, without page reloads
 - **Queue-Based Processing** — Alert polling and processing run as background jobs via Laravel Horizon, keeping the UI responsive
 - **Geographic Filtering** — Resolve alerts by county (UGC code) or lat/lon coordinates via built-in API endpoints; offshore points match their marine forecast zone
 - **HTTP Caching** — NWS API responses are cached with ETag/Last-Modified support to minimize redundant requests
@@ -27,7 +27,7 @@ Real-time National Weather Service alert monitoring, built with Laravel. Lookout
 | Framework | Laravel 13 (PHP 8.4+) |
 | UI Components | Livewire 4 |
 | Frontend | Tailwind CSS, Alpine.js, Vite |
-| Real-Time | Pusher + Laravel Echo |
+| Real-Time | Reverb (external) or Pusher + Laravel Echo |
 | Queue / Cache | Redis + Laravel Horizon |
 | HTTP Client | Saloon (with rate limiting) |
 | Database | MySQL |
@@ -43,7 +43,7 @@ Real-time National Weather Service alert monitoring, built with Laravel. Lookout
 - Node.js / npm
 - MySQL
 - Redis
-- Pusher account
+- A Reverb server (e.g. Soundboard) or a Pusher account, for live updates
 
 ## Running with Docker
 
@@ -55,14 +55,14 @@ curl -fsSL -o docker.env https://raw.githubusercontent.com/jncarter123/lookout-w
 echo "LOOKOUT_IMAGE=jncarter/lookout-wx:1" > .env    # pull instead of build
 echo "DB_PASSWORD=$(openssl rand -hex 16)" >> .env    # MySQL password, used by both services
 
-# edit docker.env: set APP_URL and NWS_API_USER_AGENT (and Pusher for live updates)
+# edit docker.env: set APP_URL and NWS_API_USER_AGENT (and Reverb or Pusher for live updates)
 docker compose up -d
 docker compose exec app php artisan db:seed --force   # admin@example.com; the password is printed once
 ```
 
 The app listens on `127.0.0.1:8000`, plain HTTP on loopback only, for a reverse proxy in front to terminate TLS. Set `APP_URL` in `docker.env` to the public URL, scheme included (`https://lookout.example.com`), or the browser blocks its assets as mixed content.
 
-- **Live updates** need a Pusher Channels app; set `BROADCAST_CONNECTION=pusher` and the `PUSHER_*` keys in `docker.env`. Without them Lookout still ingests alerts, and dashboards show them on the next page load.
+- **Live updates** need an external Reverb server (e.g. Soundboard) or a Pusher Channels app. For Reverb, create an app for Lookout on it, allow Lookout's origin, and set `BROADCAST_CONNECTION=reverb` with `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` and the server's public `REVERB_HOST`/`REVERB_PORT`/`REVERB_SCHEME`. For Pusher, set `BROADCAST_CONNECTION=pusher` and the `PUSHER_*` keys. Without either, Lookout still ingests alerts, and dashboards show them on the next page load.
 - **Data** lives in the `mysql-data` volume. The `APP_KEY` is generated onto the `lookout-data` volume on first start; it only protects sessions, so losing it just signs everyone out.
 - **Upgrades:** `docker compose pull && docker compose up -d`. Migrations run when the web container starts.
 
@@ -100,7 +100,7 @@ All variables are documented in [`.env.example`](.env.example). The ones you mus
 | `NWS_API_USER_AGENT` | NWS requires a descriptive User-Agent with contact info, e.g. `"lookout-wx (you@example.com)"` |
 | `DB_*` | MySQL connection |
 | `REDIS_*` | Redis connection (queues, caching, rate limiting) |
-| `PUSHER_APP_*` | Pusher credentials for real-time updates |
+| `REVERB_*` or `PUSHER_APP_*` | Credentials for real-time updates (see [Running with Docker](#running-with-docker)) |
 
 Sentry (`SENTRY_LARAVEL_DSN`) and Laravel Nightwatch (`NIGHTWATCH_TOKEN`) are optional. So are `NWS_COMPAT_RATE_LIMIT` and `NWS_COMPAT_CACHE_SECONDS`, for the [NWS-compatible endpoints](#nws-compatible-endpoints).
 
