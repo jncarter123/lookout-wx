@@ -30,6 +30,10 @@ class AlertsDashboard extends Component
     #[Url(as: 'q', except: '')]
     public string $search = '';
 
+    /** Show every active alert (in the feed, not expired or ended) instead of the time window's. */
+    #[Url(as: 'active', except: false)]
+    public bool $activeOnly = false;
+
     public bool $showAlertModal = false;
 
     public ?string $selectedAlertId = null;
@@ -43,6 +47,11 @@ class AlertsDashboard extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedActiveOnly(): void
     {
         $this->resetPage();
     }
@@ -106,7 +115,11 @@ class AlertsDashboard extends Component
         $cutoff = $this->cutoffForPeriod();
 
         $alerts = NwsAlert::query()
-            ->where('nws_updated_at', '>=', $cutoff)
+            ->when(
+                $this->activeOnly,
+                fn (Builder $q) => $q->active(),
+                fn (Builder $q) => $q->where('nws_updated_at', '>=', $cutoff),
+            )
             ->tap(fn (Builder $q) => $this->applySearch($q))
             ->orderByDesc('nws_updated_at')
             ->paginate(25);

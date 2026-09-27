@@ -36,14 +36,25 @@
                     <label class="block text-sm font-medium text-gray-200">Time window</label>
                     <select
                             class="mt-1 block w-full rounded-md border border-gray-800 bg-gray-900 text-gray-100 shadow-sm
-                                   focus:border-gray-600 focus:ring-gray-600"
+                                   focus:border-gray-600 focus:ring-gray-600 disabled:opacity-50"
                             wire:model.live="periodMinutes"
+                            @disabled($activeOnly)
+                            @if($activeOnly) title="Active only shows every active alert, whenever it was updated" @endif
                     >
                         @foreach($periodOptions as $minutes => $label)
                             <option value="{{ $minutes }}">{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
+
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-200 sm:pb-2.5">
+                    <input
+                            type="checkbox"
+                            wire:model.live="activeOnly"
+                            class="h-4 w-4 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-gray-600"
+                    >
+                    Active only
+                </label>
             </div>
         </div>
 
@@ -64,9 +75,13 @@
                 <div>
                     <div class="text-lg font-semibold text-gray-100">Recent alerts</div>
                     <div class="text-sm text-gray-300">
-                        Showing alerts updated since <span class="font-medium text-gray-100">
-                            <x-local-time :value="$cutoff" />
-                        </span>
+                        @if($activeOnly)
+                            Showing all active alerts, whenever they were updated
+                        @else
+                            Showing alerts updated since <span class="font-medium text-gray-100">
+                                <x-local-time :value="$cutoff" />
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -109,9 +124,9 @@
                         <tr>
                             <td class="px-4 py-6 text-center text-gray-300" colspan="5">
                                 @if(trim($search) !== '')
-                                    No alerts match “{{ $search }}” in this time window.
+                                    No {{ $activeOnly ? 'active alerts' : 'alerts in this time window' }} match “{{ $search }}”.
                                 @else
-                                    No alerts found for this time window.
+                                    {{ $activeOnly ? 'No alerts are active right now.' : 'No alerts found for this time window.' }}
                                 @endif
                             </td>
                         </tr>
