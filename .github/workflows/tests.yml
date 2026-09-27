@@ -99,7 +99,9 @@ jobs:
       - name: Check health end to end
         run: |
           curl -fsS http://127.0.0.1:8000/up > /dev/null
-          curl -fsS http://127.0.0.1:8000/login | grep -q 'name="pusher-key"'
+          # The layout renders the broadcast settings from the container's env at
+          # request time; docker.env.example turns broadcasting off, so expect `log`.
+          curl -fsS http://127.0.0.1:8000/login | grep -q '<meta name="broadcast-driver" content="log">'
           docker compose exec -T app php artisan migrate:status | grep -q removed_from_feed_at
           docker compose exec -T horizon php artisan horizon:status
           docker compose exec -T app php artisan db:seed --force
