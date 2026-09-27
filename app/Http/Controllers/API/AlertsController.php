@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Exceptions\StaleAlertCursorException;
 use App\Http\Controllers\Controller;
+use App\Services\AlertChangesFeed;
 use App\Services\NwsAlertsApiService;
 use App\Services\NwsGeoService;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +26,35 @@ class AlertsController extends Controller
         }
 
         return response()->json($payload);
+    }
+
+    /**
+     * Feed of alert changes for syncing a downstream copy of all alerts.
+     *
+     * Omit `since` to get a snapshot of every active alert plus a cursor. Then poll with
+     * `since=<cursor>`, following `hasMore` until it is false. Each change carries the alert's
+     * current state (with its counties and zones), so applying a change twice is harmless.
+     * A 410 means the cursor fell outside the retained history; resync from a snapshot.
+     */
+    public function changes(Request $request, AlertChangesFeed $feed): JsonResponse
+    {
+        $validated = $request->validate([
+            'since' => ['sometimes', 'integer', 'min:0'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:'.AlertChangesFeed::MAX_LIMIT],
+        ]);
+
+        if (! array_key_exists('since', $validated)) {
+            return response()->json($feed->snapshot());
+        }
+
+        try {
+            return response()->json($feed->since(
+                (int) $validated['since'],
+                (int) ($validated['limit'] ?? AlertChangesFeed::DEFAULT_LIMIT),
+            ));
+        } catch (StaleAlertCursorException $e) {
+            return response()->json(['error' => $e->getMessage()], 410);
+        }
     }
 
     /**

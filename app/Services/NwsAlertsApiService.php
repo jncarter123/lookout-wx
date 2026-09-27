@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\NwsAlert;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 class NwsAlertsApiService
@@ -80,17 +79,9 @@ class NwsAlertsApiService
      */
     private function activeAlerts(callable $location): Collection
     {
-        $now = Carbon::now();
-
         return NwsAlert::query()
-            ->inActiveFeed()
+            ->active()
             ->tap($location)
-            ->where(function ($q) use ($now) {
-                $q->whereNull('expires')->orWhere('expires', '>', $now);
-            })
-            ->where(function ($q) use ($now) {
-                $q->whereNull('ends')->orWhere('ends', '>', $now);
-            })
             ->orderByDesc('sent')
             ->limit(200)
             ->get([

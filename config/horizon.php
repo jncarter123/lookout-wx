@@ -233,6 +233,17 @@ return [
                 'timeout' => 120,
                 'nice' => 0,
             ],
+
+            // Unnamed-queue jobs, e.g. the scheduled prune jobs.
+            'default-supervisor' => [
+                'connection' => 'redis',
+                'queue' => ['default'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'tries' => 1,
+                'timeout' => 60,
+                'nice' => 0,
+            ],
         ],
 
         'local' => [
@@ -252,6 +263,15 @@ return [
                 'maxProcesses' => 2,
                 'tries' => 1,
                 'timeout' => 120,
+            ],
+
+            'default-supervisor' => [
+                'connection' => 'redis',
+                'queue' => ['default'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'tries' => 1,
+                'timeout' => 60,
             ],
         ],
     ],

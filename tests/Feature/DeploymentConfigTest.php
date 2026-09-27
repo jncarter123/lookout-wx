@@ -41,3 +41,10 @@ test('forwarded headers are ignored when no proxies are trusted', function () {
         ->assertOk()
         ->assertDontSee('evil.example.com', false);
 });
+
+test('horizon runs a worker for every queue jobs are dispatched to', function (string $env) {
+    // Defaults only merge into supervisors an environment names, so each queue needs its own there.
+    $queues = collect(config("horizon.environments.$env"))->pluck('queue')->flatten()->unique();
+
+    expect($queues->sort()->values()->all())->toContain('default', 'polling', 'processing');
+})->with(['production', 'local']);

@@ -9,6 +9,7 @@ use App\Http\Integrations\Nws\Requests\AlertByUrl;
 use App\Jobs\BroadcastNwsAlertsChanged;
 use App\Jobs\ProcessNwsAlertsBatch;
 use App\Models\NwsAlert;
+use App\Models\NwsAlertChange;
 use App\Models\NwsAlertCounty;
 use App\Models\NwsAlertZone;
 use App\Traits\ParsesCarbon;
@@ -164,6 +165,9 @@ class NwsAlertsService
                 $this->deleteZonesByAlertId($alertId);
                 $this->insertAlertZones($alertId, $zoneIds);
 
+                // Last statement so the cursor id is taken as close to commit as possible.
+                NwsAlertChange::record([$alertId], NwsAlertChange::UPSERTED);
+
                 return $oldCountyUgcs;
             });
 
@@ -208,10 +212,21 @@ class NwsAlertsService
      */
     private function reconcileWithFeed(array $feedIds): void
     {
-        $reappeared = NwsAlert::query()
+        $reappearedIds = NwsAlert::query()
             ->whereIn('id', $feedIds)
             ->whereNotNull('removed_from_feed_at')
-            ->update(['removed_from_feed_at' => null]);
+            ->pluck('id')
+            ->all();
+
+        if ($reappearedIds !== []) {
+            DB::transaction(function () use ($reappearedIds) {
+                NwsAlert::query()
+                    ->whereIn('id', $reappearedIds)
+                    ->update(['removed_from_feed_at' => null]);
+
+                NwsAlertChange::record($reappearedIds, NwsAlertChange::UPSERTED);
+            });
+        }
 
         $removed = NwsAlert::query()
             ->whereNull('removed_from_feed_at')
@@ -220,7 +235,7 @@ class NwsAlertsService
             ->get(['id']);
 
         if ($removed->isEmpty()) {
-            if ($reappeared > 0) {
+            if ($reappearedIds !== []) {
                 BroadcastNwsAlertsChanged::debounce();
             }
 
@@ -229,9 +244,13 @@ class NwsAlertsService
 
         $removedIds = $removed->pluck('id')->all();
 
-        NwsAlert::query()
-            ->whereIn('id', $removedIds)
-            ->update(['removed_from_feed_at' => now()]);
+        DB::transaction(function () use ($removedIds) {
+            NwsAlert::query()
+                ->whereIn('id', $removedIds)
+                ->update(['removed_from_feed_at' => now()]);
+
+            NwsAlertChange::record($removedIds, NwsAlertChange::REMOVED);
+        });
 
         $countyUgcs = $removed->pluck('counties')->flatten()->pluck('county_ugc')->unique()->values()->all();
 

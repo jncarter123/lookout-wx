@@ -3,6 +3,7 @@
 use App\Http\Integrations\Nws\Nws;
 use App\Jobs\BroadcastNwsAlertsChanged;
 use App\Models\NwsAlert;
+use App\Models\NwsAlertChange;
 use App\Models\NwsAlertZone;
 use App\Services\NwsAlertsApiService;
 use App\Services\NwsAlertsService;
@@ -73,6 +74,37 @@ test('pollOnce marks alerts missing from the feed as removed and broadcasts it',
         ->and($gone->fresh()->removed_from_feed_at)->not->toBeNull();
 
     Bus::assertDispatchedTimes(BroadcastNwsAlertsChanged::class, 1);
+});
+
+test('reconcile logs removed and reappeared alerts to the change feed', function () {
+    $back = NwsAlert::factory()->create(['removed_from_feed_at' => now()->subMinutes(5)]);
+    $gone = NwsAlert::factory()->create();
+
+    makeFeedService(new MockClient([MockResponse::make(atomFeed([$back->id]))]))->pollOnce();
+
+    expect(NwsAlertChange::orderBy('id')->get(['alert_id', 'type'])->map(fn ($c) => [$c->alert_id, $c->type])->all())
+        ->toBe([[$back->id, 'upserted'], [$gone->id, 'removed']]);
+});
+
+test('processAlertUrl logs an upsert to the change feed, and nothing when rolled back', function () {
+    $id = NWS_BASE.'/alerts/urn:oid:logged';
+
+    $failed = false;
+    NwsAlertZone::creating(function () use (&$failed) {
+        if (! $failed) {
+            $failed = true;
+            throw new RuntimeException('db write failed');
+        }
+    });
+
+    expect(fn () => makeFeedService(new MockClient([MockResponse::make(alertJson($id))]))->processAlertUrl($id, now()))
+        ->toThrow(RuntimeException::class)
+        ->and(NwsAlertChange::count())->toBe(0);
+
+    makeFeedService(new MockClient([MockResponse::make(alertJson($id))]))->processAlertUrl($id, now());
+
+    expect(NwsAlertChange::pluck('alert_id')->all())->toBe([$id])
+        ->and(NwsAlertChange::first()->type)->toBe(NwsAlertChange::UPSERTED);
 });
 
 test('pollOnce clears the removed mark when an alert reappears in the feed', function () {

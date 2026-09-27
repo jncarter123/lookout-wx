@@ -61,6 +61,33 @@ class NwsAlert extends Model
             });
     }
 
+    /**
+     * Alerts in the active feed that have not yet expired or ended.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        $now = now();
+
+        return $query
+            ->inActiveFeed()
+            ->where(function (Builder $q) use ($now) {
+                $q->whereNull('expires')->orWhere('expires', '>', $now);
+            })
+            ->where(function (Builder $q) use ($now) {
+                $q->whereNull('ends')->orWhere('ends', '>', $now);
+            });
+    }
+
+    public function isActive(): bool
+    {
+        $now = now();
+
+        return $this->removed_from_feed_at === null
+            && $this->message_type !== 'Cancel'
+            && ($this->expires === null || $this->expires->gt($now))
+            && ($this->ends === null || $this->ends->gt($now));
+    }
+
     public function counties(): HasMany
     {
         return $this->hasMany(NwsAlertCounty::class, 'alert_id', 'id');
