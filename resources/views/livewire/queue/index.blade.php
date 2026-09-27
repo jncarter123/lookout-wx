@@ -48,13 +48,22 @@
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
             <h2 class="text-base font-semibold text-gray-900">Failed Jobs</h2>
             @if($failedCount > 0)
-                <button
-                    wire:click="retryAll"
-                    wire:confirm="Retry all {{ $failedCount }} failed job(s)?"
-                    class="text-xs font-medium text-blue-600 hover:text-blue-800"
-                >
-                    Retry All
-                </button>
+                <div class="flex items-center gap-4">
+                    <button
+                        wire:click="retryAll"
+                        wire:confirm="Retry all {{ $failedCount }} failed job(s)?"
+                        class="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    >
+                        Retry All
+                    </button>
+                    <button
+                        wire:click="deleteAll"
+                        wire:confirm="Delete all {{ $failedCount }} failed job(s)? They cannot be retried afterwards."
+                        class="text-xs font-medium text-red-600 hover:text-red-800"
+                    >
+                        Delete All
+                    </button>
+                </div>
             @endif
         </div>
 
