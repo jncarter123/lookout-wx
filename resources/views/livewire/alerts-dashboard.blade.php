@@ -1,22 +1,13 @@
 <div class="min-h-[calc(100vh-4rem)] bg-gray-950 text-gray-100"
-     {{-- Refresh on alert broadcasts, at most once per 3s: alert bursts would otherwise re-render every client per event. --}}
+     {{-- Refresh on the alerts-changed ping; the server already debounces bursts into one ping. --}}
      x-data="{
-        pending: null,
         handler: null,
         init() {
-            this.handler = () => {
-                if (this.pending) return;
-                this.pending = setTimeout(() => { this.pending = null; this.$wire.$refresh(); }, 3000);
-            };
-            window.Echo?.channel('nws.alerts')
-                .listen('.NwsAlert', this.handler)
-                .listen('.NwsAlertsRemoved', this.handler);
+            this.handler = () => this.$wire.$refresh();
+            window.Echo?.channel('nws.alerts').listen('.NwsAlertsChanged', this.handler);
         },
         destroy() {
-            clearTimeout(this.pending);
-            window.Echo?.channel('nws.alerts')
-                .stopListening('.NwsAlert', this.handler)
-                .stopListening('.NwsAlertsRemoved', this.handler);
+            window.Echo?.channel('nws.alerts').stopListening('.NwsAlertsChanged', this.handler);
         },
      }">
     <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">

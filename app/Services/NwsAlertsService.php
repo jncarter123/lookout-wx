@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Events\NwsAlertsRemoved;
-use App\Events\NwsAlertUpserted;
 use App\Http\Integrations\Nws\HttpValidatorCache;
 use App\Http\Integrations\Nws\Nws;
 use App\Http\Integrations\Nws\Requests\ActiveAlertsAtomFeed;
 use App\Http\Integrations\Nws\Requests\AlertByUrl;
+use App\Jobs\BroadcastNwsAlertsChanged;
 use App\Jobs\ProcessNwsAlertsBatch;
 use App\Models\NwsAlert;
 use App\Models\NwsAlertCounty;
@@ -171,8 +170,7 @@ class NwsAlertsService
             // Single batch cache invalidation for all old + new counties
             $this->api->invalidateCounties(array_unique(array_merge($oldCountyUgcs, $countyUgcs)));
 
-            // send broadcast event
-            event(new NwsAlertUpserted($alertId, $countyUgcs, $zoneIds));
+            BroadcastNwsAlertsChanged::debounce();
 
             // Only now is this version safely stored; a 304 next time is correct.
             $this->validators->remember($response);
@@ -210,7 +208,7 @@ class NwsAlertsService
      */
     private function reconcileWithFeed(array $feedIds): void
     {
-        NwsAlert::query()
+        $reappeared = NwsAlert::query()
             ->whereIn('id', $feedIds)
             ->whereNotNull('removed_from_feed_at')
             ->update(['removed_from_feed_at' => null]);
@@ -218,10 +216,14 @@ class NwsAlertsService
         $removed = NwsAlert::query()
             ->whereNull('removed_from_feed_at')
             ->whereNotIn('id', $feedIds)
-            ->with(['counties:alert_id,county_ugc', 'zones:alert_id,zone_id'])
+            ->with('counties:alert_id,county_ugc')
             ->get(['id']);
 
         if ($removed->isEmpty()) {
+            if ($reappeared > 0) {
+                BroadcastNwsAlertsChanged::debounce();
+            }
+
             return;
         }
 
@@ -232,11 +234,10 @@ class NwsAlertsService
             ->update(['removed_from_feed_at' => now()]);
 
         $countyUgcs = $removed->pluck('counties')->flatten()->pluck('county_ugc')->unique()->values()->all();
-        $zoneIds = $removed->pluck('zones')->flatten()->pluck('zone_id')->unique()->values()->all();
 
         $this->api->invalidateCounties($countyUgcs);
 
-        event(new NwsAlertsRemoved($removedIds, $countyUgcs, $zoneIds));
+        BroadcastNwsAlertsChanged::debounce();
     }
 
     private function deleteZonesByAlertId(string $alertId): void
