@@ -1,8 +1,7 @@
 <?php
 
-use App\Events\NwsAlertsRemoved;
-use App\Events\NwsAlertUpserted;
 use App\Http\Integrations\Nws\Nws;
+use App\Jobs\BroadcastNwsAlertsChanged;
 use App\Models\NwsAlert;
 use App\Models\NwsAlertChange;
 use App\Models\NwsAlertZone;
@@ -11,7 +10,6 @@ use App\Services\NwsAlertsService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Event;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
@@ -20,7 +18,6 @@ const NWS_BASE = 'https://api.weather.gov';
 beforeEach(function () {
     config(['wxalerts.nws.baseurl' => NWS_BASE]);
     Cache::store('redis')->flush(); // feed request rate limiter lives in redis
-    Event::fake([NwsAlertUpserted::class, NwsAlertsRemoved::class]);
     Bus::fake();
 });
 
@@ -76,9 +73,7 @@ test('pollOnce marks alerts missing from the feed as removed and broadcasts it',
     expect($kept->fresh()->removed_from_feed_at)->toBeNull()
         ->and($gone->fresh()->removed_from_feed_at)->not->toBeNull();
 
-    Event::assertDispatched(NwsAlertsRemoved::class, fn (NwsAlertsRemoved $e) => $e->alertIds === [$gone->id]
-        && $e->countyUgcs === ['FLC001']
-        && $e->zoneIds === ['GMZ330']);
+    Bus::assertDispatchedTimes(BroadcastNwsAlertsChanged::class, 1);
 });
 
 test('reconcile logs removed and reappeared alerts to the change feed', function () {
@@ -118,7 +113,7 @@ test('pollOnce clears the removed mark when an alert reappears in the feed', fun
     makeFeedService(new MockClient([MockResponse::make(atomFeed([$alert->id]))]))->pollOnce();
 
     expect($alert->fresh()->removed_from_feed_at)->toBeNull();
-    Event::assertNotDispatched(NwsAlertsRemoved::class);
+    Bus::assertDispatchedTimes(BroadcastNwsAlertsChanged::class, 1);
 });
 
 test('pollOnce does not reconcile against an area-filtered feed', function () {
@@ -175,7 +170,7 @@ test('failed processing is rolled back and the ETag is not reused', function () 
     expect($mockClient->getLastPendingRequest()->headers()->get('If-None-Match'))->toBeNull()
         ->and(NwsAlert::find($id)->zones()->pluck('zone_id')->all())->toBe(['GMZ330'])
         ->and(NwsAlert::find($id)->counties()->pluck('county_ugc')->all())->toBe(['TXC121']);
-    Event::assertDispatchedTimes(NwsAlertUpserted::class, 1);
+    Bus::assertDispatchedTimes(BroadcastNwsAlertsChanged::class, 1);
 });
 
 test('ETag is sent on the next request after successful processing', function () {
