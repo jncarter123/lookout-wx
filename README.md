@@ -102,7 +102,7 @@ All variables are documented in [`.env.example`](.env.example). The ones you mus
 | `REDIS_*` | Redis connection (queues, caching, rate limiting) |
 | `PUSHER_APP_*` | Pusher credentials for real-time updates |
 
-Sentry (`SENTRY_LARAVEL_DSN`) and Laravel Nightwatch (`NIGHTWATCH_TOKEN`) are optional.
+Sentry (`SENTRY_LARAVEL_DSN`) and Laravel Nightwatch (`NIGHTWATCH_TOKEN`) are optional. So are `NWS_COMPAT_RATE_LIMIT` and `NWS_COMPAT_CACHE_SECONDS`, for the [NWS-compatible endpoints](#nws-compatible-endpoints).
 
 ## Running the Application
 
@@ -159,7 +159,7 @@ Roles are managed at `/admin/roles`. The seeder creates an initial `admin` user 
 
 ## API Authentication
 
-All API endpoints require a Bearer token issued via the token management UI (`/admin/tokens`) or programmatically via Sanctum.
+All API endpoints except the [NWS-compatible ones](#nws-compatible-endpoints) require a Bearer token issued via the token management UI (`/admin/tokens`) or programmatically via Sanctum.
 
 ```http
 Authorization: Bearer <your-token>
@@ -184,6 +184,20 @@ For consumers that keep their own copy of alerts (e.g. sv-cad) and filter by are
 3. **Resync:** a `410` means the cursor is older than the retained history (48 hours); start again from step 1.
 
 Each change is `{type, alertId, alert}`: `type` is `upserted` or `removed`, and `alert` is the alert's *current* state including `active`, `counties`, and `zones`, so applying a change twice is harmless. `alert` is `null` if the alert has since been pruned. Changes are held back for a few seconds after they are written so a cursor never skips a late-committing row.
+
+### NWS-compatible endpoints
+
+Drop-in replacements for the [NWS API](https://www.weather.gov/documentation/services-web-api)'s alert endpoints, answered from Lookout's store. An application already calling `api.weather.gov` switches by changing its base URL to `https://{lookout host}/api/nws` — no token, and the same response shape.
+
+| Method | Endpoint | As NWS |
+|---|---|---|
+| GET | `/api/nws/alerts/active` | `/alerts/active`, with `point`, `area`, `zone`, `status`, `message_type`, `event`, `severity`, `urgency`, `certainty`, `limit` |
+| GET | `/api/nws/alerts/{id}` | `/alerts/{id}` |
+
+- **Public and rate limited** per client IP, like NWS: `NWS_COMPAT_RATE_LIMIT` requests a minute (default 60). Identical queries are cached for `NWS_COMPAT_CACHE_SECONDS` (default 30).
+- **Same shape:** a GeoJSON `FeatureCollection` (`application/geo+json`) of each alert exactly as NWS published it; errors are `application/problem+json`.
+- **Refused, not ignored:** any other NWS parameter (`region`, `code`…) is a `400`, since ignoring a filter would return more alerts than asked for.
+- **Points** match the point's county and forecast zone, where NWS also matches alert polygons: a polygon warning clipping part of a county is returned for the whole county — more alerts than NWS, never fewer. A point that cannot be looked up is a `503`, never an empty list.
 
 ## Admin UI
 
