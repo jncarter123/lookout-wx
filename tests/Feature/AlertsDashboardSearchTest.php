@@ -69,7 +69,7 @@ test('a blank search shows every alert in the window, and a miss says so', funct
 
     Livewire::test(AlertsDashboard::class)
         ->set('search', 'nothing like this')
-        ->assertSee('No alerts match “nothing like this” in this time window.');
+        ->assertSee('No alerts in this time window match “nothing like this”.');
 });
 
 test('changing the search returns to the first page', function () {
