@@ -5,6 +5,7 @@ namespace App\Livewire\Queue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Laravel\Horizon\Contracts\MasterSupervisorRepository;
 use Livewire\Component;
 
@@ -31,6 +32,24 @@ class Index extends Component
     {
         $this->authorize('queue.monitor');
         Artisan::call('queue:retry', ['id' => ['all']]);
+    }
+
+    /**
+     * Delete every failed job: the failed_jobs table this page lists, and Horizon's own
+     * failed list in Redis, so the Horizon dashboard does not go on showing jobs this
+     * page says are gone. Same permission as deleting them one at a time.
+     */
+    public function deleteAll(): void
+    {
+        $this->authorize('queue.monitor');
+        Artisan::call('queue:flush');
+
+        try {
+            Artisan::call('horizon:forget', ['--all' => true]);
+        } catch (\Throwable $e) {
+            // The table is already cleared; Horizon trims its own list in time.
+            Log::warning('Could not clear Horizon\'s failed jobs', ['exception' => $e]);
+        }
     }
 
     public function render()
