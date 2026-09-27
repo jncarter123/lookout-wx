@@ -65,15 +65,21 @@ return [
             'driver' => 'null',
         ],
 
+        /*
+        | An external Reverb server (e.g. Soundboard), reached at REVERB_HOST by this
+        | app and by browsers alike. Laravel's broadcaster reads the address from
+        | `options` only: set at the top level it was ignored, and broadcasts went to
+        | Pusher's default cloud host instead.
+        */
         'reverb' => [
             'driver' => 'reverb',
             'app_id' => env('REVERB_APP_ID'),
             'key' => env('REVERB_APP_KEY'),
             'secret' => env('REVERB_APP_SECRET'),
-            'host' => env('REVERB_HOST', '127.0.0.1'),
-            'port' => env('REVERB_PORT', 8080),
-            'scheme' => env('REVERB_SCHEME', 'http'),
             'options' => [
+                'host' => env('REVERB_HOST'),
+                'port' => (int) env('REVERB_PORT', 443),
+                'scheme' => env('REVERB_SCHEME', 'https'),
                 'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
             ],
         ],
