@@ -169,10 +169,21 @@ Authorization: Bearer <your-token>
 
 | Method | Endpoint | Description |
 |---|---|---|
+| GET | `/api/alerts/changes?since=&limit=` | Cursor feed of alert changes for syncing all alerts downstream (see below) |
 | GET | `/api/alerts/county/{ugc}` | Alerts for a county by UGC code (e.g. `TXC121`) |
 | GET | `/api/alerts/points?lat=&lon=` | Alerts for geographic coordinates, matched by county or forecast zone (works offshore) |
 | GET | `/api/geo/points?lat=&lon=` | Geographic metadata for a lat/lon point |
 | GET | `/api/geo/ugc?lat=&lon=` | County UGC code for a lat/lon point |
+
+### Alert changes feed
+
+For consumers that keep their own copy of alerts (e.g. sv-cad) and filter by area locally.
+
+1. **Bootstrap:** `GET /api/alerts/changes` (no `since`) returns every active alert and a `cursor`.
+2. **Poll:** `GET /api/alerts/changes?since=<cursor>` returns changes after the cursor and a new `cursor`. If `hasMore` is true, request again immediately. `limit` defaults to 500 (max 1000).
+3. **Resync:** a `410` means the cursor is older than the retained history (48 hours); start again from step 1.
+
+Each change is `{type, alertId, alert}`: `type` is `upserted` or `removed`, and `alert` is the alert's *current* state including `active`, `counties`, and `zones`, so applying a change twice is harmless. `alert` is `null` if the alert has since been pruned. Changes are held back for a few seconds after they are written so a cursor never skips a late-committing row.
 
 ## Admin UI
 
