@@ -3,6 +3,7 @@
 use App\Providers\AppServiceProvider;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
 
 afterEach(function () {
     TrustProxies::flushState();
@@ -117,3 +118,50 @@ test('horizon runs a worker for every queue jobs are dispatched to', function (s
 
     expect($queues->sort()->values()->all())->toContain('default', 'polling', 'processing');
 })->with(['production', 'local']);
+
+test('broadcasting is off when no connection is chosen', function () {
+    $saved = getenv('BROADCAST_CONNECTION');
+    putenv('BROADCAST_CONNECTION');
+    unset($_ENV['BROADCAST_CONNECTION'], $_SERVER['BROADCAST_CONNECTION']);
+
+    try {
+        $broadcasting = require config_path('broadcasting.php');
+    } finally {
+        putenv("BROADCAST_CONNECTION={$saved}");
+        $_ENV['BROADCAST_CONNECTION'] = $_SERVER['BROADCAST_CONNECTION'] = $saved;
+    }
+
+    expect($broadcasting['default'])->toBe('null');
+});
+
+test('a broadcaster missing its settings is turned off instead of failing every broadcast', function (string $connection, array $settings, string $missing) {
+    Log::spy();
+    config(['broadcasting.default' => $connection, "broadcasting.connections.$connection" => $settings]);
+
+    (new AppServiceProvider(app()))->boot();
+
+    expect(config('broadcasting.default'))->toBe('null');
+    Log::shouldHaveReceived('warning')->with(Mockery::on(fn ($m) => str_contains($m, $missing)))->once();
+})->with([
+    'reverb without a host' => ['reverb', [
+        'driver' => 'reverb', 'app_id' => '42', 'key' => 'k', 'secret' => 's',
+        'options' => ['host' => '', 'port' => 443, 'scheme' => 'https'],
+    ], 'options.host'],
+    'pusher without credentials' => ['pusher', [
+        'driver' => 'pusher', 'app_id' => null, 'key' => null, 'secret' => null, 'options' => ['cluster' => 'mt1'],
+    ], 'app_id, key, secret'],
+]);
+
+test('a fully configured broadcaster is left on', function () {
+    config([
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.app_id' => '42',
+        'broadcasting.connections.reverb.key' => 'k',
+        'broadcasting.connections.reverb.secret' => 's',
+        'broadcasting.connections.reverb.options.host' => 'soundboard.example.com',
+    ]);
+
+    (new AppServiceProvider(app()))->boot();
+
+    expect(config('broadcasting.default'))->toBe('reverb');
+});

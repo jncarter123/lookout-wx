@@ -6,6 +6,7 @@ use App\Http\Responses\NwsProblem;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +28,38 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureProxies();
         $this->configureRateLimits();
+        $this->configureBroadcasting();
+    }
+
+    /**
+     * A broadcaster missing its settings fails every broadcast (an empty REVERB_HOST
+     * becomes https://:443). Turn broadcasting off instead, so the dashboards just stop
+     * refreshing live, and say why once per worker or command rather than per request.
+     */
+    protected function configureBroadcasting(): void
+    {
+        $connection = config('broadcasting.default');
+
+        $required = match ($connection) {
+            'reverb' => ['app_id', 'key', 'secret', 'options.host'],
+            'pusher' => ['app_id', 'key', 'secret'],
+            default => [],
+        };
+
+        $missing = array_values(array_filter(
+            $required,
+            fn (string $key) => blank(config("broadcasting.connections.$connection.$key"))
+        ));
+
+        if ($missing === []) {
+            return;
+        }
+
+        config(['broadcasting.default' => 'null']);
+
+        if ($this->app->runningInConsole()) {
+            Log::warning("Broadcasting disabled: the \"$connection\" connection is missing ".implode(', ', $missing).'.');
+        }
     }
 
     /**
